@@ -12,10 +12,21 @@
 
 # xgplayer HEVC (H.265) Soft Decode Edition
 
-xgplayer with H.265 soft decode for FLV / HLS. No transcoding, no browser plugins.
+xgplayer with H.265 soft decode for MP4 / FLV / WS-FLV / HLS. No transcoding, no browser plugins.
 When hardware HEVC is available (Chrome/Edge with GPU HEVC, Safari 16+) it plays natively.
 When it's not (Firefox, most China/domestic browsers, Linux without HEVC decoder) it transparently falls back to wasm soft decode
 on a canvas overlay. Audio is always native, so volume, seek, subtitles, and playback rate all work normally.
+
+## Supported formats
+
+| Format | URL                    | H.265 hardware | H.265 software | Plugin                              |
+| ------ | ---------------------- | -------------- | -------------- | ----------------------------------- |
+| MP4    | `.mp4`                 | ✅             | ✅             | `MP4Player` + `xgplayer-mp4.min.js` |
+| FLV    | `http(s)://…/live.flv` | ✅             | ✅             | `FlvPlayer` + `xgplayer-flv.min.js` |
+| WS-FLV | `ws(s)://…/live.flv`   | ✅             | ✅             | `FlvPlayer`                         |
+| HLS    | `.m3u8`                | ✅             | ✅             | `HlsPlayer` + `xgplayer-hls.min.js` |
+
+> All four formats try H.265 hardware first and switch to wasm when unavailable. H.264 uses native/MSE.
 
 ---
 
@@ -30,6 +41,7 @@ your-project/public/
     xgplayer-soft-decode.min.js
     xgplayer-hls.min.js
     xgplayer-flv.min.js
+    xgplayer-mp4.min.js
     xgplayer.min.css
   wasm/
     decode/
@@ -40,14 +52,15 @@ your-project/public/
 
 `es/` and `loader.js` are optional (see below).
 
-**2. Add scripts.** Order: core -> soft decode -> hls -> flv.
+**2. Add scripts.** Order: core -> soft decode -> hls -> flv -> mp4.
 
 ```html
-<link rel="stylesheet" href="/umd/xgplayer.min.css">
+<link rel="stylesheet" href="/umd/xgplayer.min.css" />
 <script src="/umd/xgplayer.min.js"></script>
 <script src="/umd/xgplayer-soft-decode.min.js"></script>
 <script src="/umd/xgplayer-hls.min.js"></script>
 <script src="/umd/xgplayer-flv.min.js"></script>
+<script src="/umd/xgplayer-mp4.min.js"></script>
 ```
 
 **3. Create a player.**
@@ -56,16 +69,16 @@ your-project/public/
 <div id="player" style="width:100%;height:480px"></div>
 <script>
   var player = new Player({
-    id: 'player',
-    url: 'https://your-host/live/stream.flv',
+    id: "player",
+    url: "https://your-host/live/stream.flv",
     isLive: true,
     autoplay: true,
     autoplayMuted: true,
-    plugins: [FlvPlayer],        // HlsPlayer for .m3u8
-    softDecode: 'auto',          // 'auto' / true / false
-    softDecodeOptions: { wasmBaseUrl: '/wasm' },
-    flv: { targetLatency: 1, maxLatency: 3 }
-  })
+    plugins: [FlvPlayer], // HlsPlayer for .m3u8, MP4Player for .mp4
+    softDecode: "auto", // 'auto' / true / false
+    softDecodeOptions: { wasmBaseUrl: "/wasm" },
+    flv: { targetLatency: 1, maxLatency: 3 },
+  });
 </script>
 ```
 
@@ -73,25 +86,46 @@ your-project/public/
 
 ### WebSocket FLV (`ws://` / `wss://`)
 
-Put the WebSocket address in `url`; the transport is selected from the scheme 
+Put the WebSocket address in `url`; the transport is selected from the scheme
 
 ```js
 var player = new Player({
-  id: 'player',
-  url: 'ws://192.168.1.4:8098/api/proxy/sms/pull/splw2lv.live.flv?token=...',
+  id: "player",
+  url: "ws://192.168.1.4:8098/api/proxy/sms/pull/splw2lv.live.flv?token=...",
   isLive: true,
   autoplay: true,
   plugins: [FlvPlayer],
-  softDecode: 'auto',
-  softDecodeOptions: { wasmBaseUrl: '/wasm' },
+  softDecode: "auto",
+  softDecodeOptions: { wasmBaseUrl: "/wasm" },
   flv: {
     retryCount: 3,
     retryDelay: 1000,
     maxReaderInterval: 5000,
-    disconnectRetryCount: 3 // reconnect after the server closes a live stream
-  }
-})
+    disconnectRetryCount: 3, // reconnect after the server closes a live stream
+  },
+});
 ```
+
+### MP4 (H.265 software decoding)
+
+Use `MP4Player`; pass the soft-decode factory to `mp4.createSoftSink`:
+
+```js
+var soft = { wasmBaseUrl: "/wasm" };
+var player = new Player({
+  id: "player",
+  url: "https://your-host/video.mp4",
+  plugins: [MP4Player],
+  softDecode: "auto",
+  softDecodeOptions: soft,
+  mp4: {
+    softDecode: "auto",
+    createSoftSink: SoftDecode.createSoftSinkFactory(soft),
+  },
+});
+```
+
+H.264 MP4 needs no wasm; it uses native MSE even when the factory is present.
 
 ---
 
@@ -102,7 +136,11 @@ Don't want every page to carry 1.2 MB of scripts? Use `loader.js` -- it injects 
 ```html
 <script src="/loader.js"></script>
 <script>
-  XgPlayerLoader.create({ id: 'player', url: '/live/stream.flv', isLive: true })
+  XgPlayerLoader.create({
+    id: "player",
+    url: "/live/stream.flv",
+    isLive: true,
+  });
 </script>
 ```
 
@@ -118,23 +156,23 @@ Scripts only, no player: `await XgPlayerLoader.load()`.
 
 ## Configuration
 
-| Option | Description |
-|--------|-------------|
-| `softDecode` | `'auto'`(default) fallback / `true` force soft / `false` disable |
-| `softDecodeOptions.wasmBaseUrl` | Directory containing `decode/` |
-| `softDecodeOptions.renderer` | `'canvas'`(default) / `'video'` |
-| `softDecodeOptions.wasmVariant` | `'simd'` / `'atomic'` / `'baseline'` / `'64'` |
-| `onSoftDecodeFallback` | Callback `function(info)` when soft decode kicks in |
+| Option                          | Description                                                      |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `softDecode`                    | `'auto'`(default) fallback / `true` force soft / `false` disable |
+| `softDecodeOptions.wasmBaseUrl` | Directory containing `decode/`                                   |
+| `softDecodeOptions.renderer`    | `'canvas'`(default) / `'video'`                                  |
+| `softDecodeOptions.wasmVariant` | `'simd'` / `'atomic'` / `'baseline'` / `'64'`                    |
+| `onSoftDecodeFallback`          | Callback `function(info)` when soft decode kicks in              |
 
 ---
 
 ## Runtime API
 
 ```js
-player.forceSoftDecode(reason)         // Switch to soft decode at runtime
-player.plugins.flv.core.isSoftDecoding // true/false
-player.plugins.flv.core.softDecodeStats // decoded, rendered, dropped counters
-player.getLiveLatency()                // Live latency in seconds
+player.forceSoftDecode(reason); // Switch to soft decode at runtime
+player.plugins.flv.core.isSoftDecoding; // true/false
+player.plugins.flv.core.softDecodeStats; // decoded, rendered, dropped counters
+player.getLiveLatency(); // Live latency in seconds
 ```
 
 For HLS replace `flv` with `hls`.

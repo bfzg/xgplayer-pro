@@ -18,7 +18,18 @@
 
 # xgplayer HEVC (H.265) 软解版
 
-西瓜播放器的 H.265 直接分发：FLV / HLS 里的 H.265 不用转码、不用装插件。浏览器能硬解就走原生 MSE，不能硬解（Firefox、国产/信创浏览器等）自动切 wasm 软解，音频由浏览器原生解码，音量、倍速、进度条一切照常。
+西瓜播放器的 H.265 直接分发：MP4 / FLV / WS-FLV / HLS 里的 H.265 不用转码、不用装插件。浏览器能硬解就走原生 MSE，不能硬解（Firefox、国产/信创浏览器等）自动切 wasm 软解，音频由浏览器原生解码，音量、倍速、进度条一切照常。
+
+## 支持的格式
+
+| 格式 | 地址 | H.265 硬解 | H.265 软解 | 插件 |
+| --- | --- | --- | --- | --- |
+| MP4 | `.mp4` | ✅ | ✅ | `MP4Player` + `xgplayer-mp4.min.js` |
+| FLV | `http(s)://…/live.flv` | ✅ | ✅ | `FlvPlayer` + `xgplayer-flv.min.js` |
+| WS-FLV | `ws(s)://…/live.flv` | ✅ | ✅ | `FlvPlayer` |
+| HLS | `.m3u8` | ✅ | ✅ | `HlsPlayer` + `xgplayer-hls.min.js` |
+
+> 四种格式均为 H.265 硬解优先，浏览器不支持时自动切 wasm 软解；H.264 由浏览器原生/MSE 解码。
 
 ---
 
@@ -33,6 +44,7 @@ your-project/public/
     xgplayer-soft-decode.min.js
     xgplayer-hls.min.js
     xgplayer-flv.min.js
+    xgplayer-mp4.min.js
     xgplayer.min.css
   wasm/
     decode/
@@ -43,7 +55,7 @@ your-project/public/
 
 `es/` 和 `loader.js` 可选（见下文）。
 
-**2. 引脚本。** 顺序不能换，软解包先注注册表，hls/flv 再读它：
+**2. 引脚本。** 顺序不能换，软解包先注注册表，hls/flv/mp4 再读它：
 
 ```html
 <link rel="stylesheet" href="/umd/xgplayer.min.css">
@@ -51,6 +63,7 @@ your-project/public/
 <script src="/umd/xgplayer-soft-decode.min.js"></script>
 <script src="/umd/xgplayer-hls.min.js"></script>
 <script src="/umd/xgplayer-flv.min.js"></script>
+<script src="/umd/xgplayer-mp4.min.js"></script>
 ```
 
 **3. 建播放器。**
@@ -64,7 +77,7 @@ your-project/public/
     isLive: true,
     autoplay: true,
     autoplayMuted: true,
-    plugins: [FlvPlayer],        // .m3u8 用 HlsPlayer
+    plugins: [FlvPlayer],        // .m3u8 用 HlsPlayer，.mp4 用 MP4Player
     softDecode: 'auto',          // 'auto' 自动 / true 强制 / false 关闭
     softDecodeOptions: { wasmBaseUrl: '/wasm' },
     flv: { targetLatency: 1, maxLatency: 3 }
@@ -98,6 +111,27 @@ var player = new Player({
   }
 })
 ```
+
+### MP4（H.265 软解）
+
+MP4 用 `MP4Player`，软解 factory 需要显式传给 `mp4.createSoftSink`：
+
+```js
+var soft = { wasmBaseUrl: '/wasm' }
+var player = new Player({
+  id: 'player',
+  url: 'https://your-host/video.mp4',
+  plugins: [MP4Player],
+  softDecode: 'auto',
+  softDecodeOptions: soft,
+  mp4: {
+    softDecode: 'auto',
+    createSoftSink: SoftDecode.createSoftSinkFactory(soft)
+  }
+})
+```
+
+H.264 MP4 不需要 wasm，传了也会自动走浏览器 MSE。
 
 ---
 
