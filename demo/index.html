@@ -1310,7 +1310,7 @@
         }
 
         setChip('wasmChip', '', 'wasm <b>检测中</b>')
-        wasmProbe = fetch('./wasm/decode/hevc-simd.wasm', { method: 'HEAD', cache: 'no-store' })
+        wasmProbe = fetch('./wasm/hevc-simd.wasm', { method: 'HEAD', cache: 'no-store' })
           .then(function (res) {
             var type = (res.headers.get('content-type') || '').toLowerCase()
             if (!res.ok || type.indexOf('html') !== -1) throw new Error('missing')
