@@ -34,7 +34,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bytedance/xgplayer.git"
+    "url": "git+https://github.com/bfzg/xgplayer-pro.git"
   },
   "author": "yinguohui@bytedance.com",
   "license": "MIT",

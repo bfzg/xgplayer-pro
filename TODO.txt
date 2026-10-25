@@ -1,2 +1,35 @@
-1. hls h265 软解播放时 seek到没有缓存的片段是一个个请求会把跳过的请求完才行。西瓜硬解跳转正常。
-2. 在视频是h264 时强制使用软解会渲染不出画面，这个是否能处理下，如果是h264 的视频就还用正常的播放器啊。只有265可以强制软解。或者是否有更好的方案。
+# TODO
+
+仓库从 fork 转成自有仓库 bfzg/xgplayer-pro 之后，地址已全部迁移完。
+下面几项先不动，记在这里。
+
+## 1. README 的 npm 徽章指向的是字节的包
+
+- 位置：README.md、README.en.md、packages/xgplayer/README.md 顶部
+- 现在指向 https://www.npmjs.com/package/xgplayer，显示的是上游版本号（3.0.26），
+  不是我们自己发布的版本，容易让人误以为这个仓库发的就是那个包
+- 待定：直接去掉，还是换成自己的发布渠道（GitHub Releases / 自己的下载页）
+
+## 2. packages/* 的包名仍沿用上游
+
+- xgplayer、xgplayer-flv、xgplayer-hls 等名字已被字节占用，发不了同名的
+- 要发自己的 npm 需要加 scope，例如 @ccnvr/xgplayer
+- 改动范围：packages/*/package.json 的 name，以及包与包之间的 dependencies /
+  peerDependencies 引用
+
+## 3. 产品名要不要统一
+
+- 仓库已经叫 xgplayer-pro，但对外文案还是「基于西瓜播放器 xgplayer 二次封装」
+- 待定：是否统一成 XGPlayer Pro 之类的独立品牌名
+- 涉及：
+  - ccnvr_workspace/player/index.html（首屏、页脚）
+  - ccnvr_workspace/player/player_cn.html、playeren.html（页脚）
+  - ccnvr_workspace/website/src/components/home/HomePlayer.tsx（面板标题 XGPlayer HEVC）
+  - 改文案会连带影响 SEO（标题、描述、结构化数据里的 name）
+
+## 4. package.json 的 author 还是上游邮箱
+
+- 根 package.json：yinguohui@bytedance.com
+- packages/xgplayer、xgplayer-hls.js、xgplayer-mp4、xgplayer-music、xgplayer-dash、
+  xgplayer-shaka、xgplayer-subtitles 等也有
+- 发 npm 之前应改成自己的署名

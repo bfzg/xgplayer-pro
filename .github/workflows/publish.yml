@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    if: github.repository == 'bytedance/xgplayer'
+    if: github.repository == 'bfzg/xgplayer-pro'
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -70,7 +70,7 @@ jobs:
             package.json
           retention-days: 7
   release_npm:
-    if: github.repository == 'bytedance/xgplayer'
+    if: github.repository == 'bfzg/xgplayer-pro'
     permissions:
       id-token: write
       
@@ -101,7 +101,7 @@ jobs:
           NPM_CONFIG_PROVENANCE: true
 
   release_github:
-    if: github.repository == 'bytedance/xgplayer'
+    if: github.repository == 'bfzg/xgplayer-pro'
     permissions:
       contents: write
     needs: [build, release_npm]
@@ -130,7 +130,7 @@ jobs:
   commit_to_main:
     permissions:
       contents: write
-    if: github.repository == 'bytedance/xgplayer' && needs.build.outputs.is_stable == 'true'
+    if: github.repository == 'bfzg/xgplayer-pro' && needs.build.outputs.is_stable == 'true'
     needs: [build, release_npm, release_github]
     runs-on: ubuntu-latest
 
@@ -174,7 +174,7 @@ jobs:
           message: 'chore(release): release version ${{ needs.build.outputs.tag }}'
 
   release_summary:
-    if: always() && github.repository == 'bytedance/xgplayer'
+    if: always() && github.repository == 'bfzg/xgplayer-pro'
     needs: [build, release_npm, release_github, commit_to_main]
     runs-on: ubuntu-latest
 
